@@ -106,6 +106,15 @@
     </div>
 
     <!-- Lijst -->
+     <nav>
+        <button class="all active" onclick="setFilter('all')">Alles</button>
+        <button class="urgent" onclick="setFilter('urgent')">Dringend</button>
+        <button class="medium" onclick="setFilter('medium')">Medium</button>
+        <button class="low" onclick="setFilter('low')">
+          Boeit niet zoveel
+        </button>
+      </nav>
+      
     <div id="listSection">
       <input id="itemInput" placeholder="Nieuw item..." />
       <select id="urgency">
@@ -114,15 +123,6 @@
         <option value="urgent">Dringend</option>
       </select>
       <button onclick="addItem()">Toevoegen</button>
-
-      <nav>
-        <button class="all active" onclick="setFilter('all')">Alles</button>
-        <button class="urgent" onclick="setFilter('urgent')">Dringend</button>
-        <button class="medium" onclick="setFilter('medium')">Medium</button>
-        <button class="low" onclick="setFilter('low')">
-          Boeit niet zoveel
-        </button>
-      </nav>
 
       <ul id="list"></ul>
     </div>
