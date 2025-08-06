@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Boodschappenlijst</title>
+    <link rel="icon" href="/Shopping_cart.png" type="icon">
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 1rem;
+        max-width: 500px;
+        margin: auto;
+      }
+      input,
+      select,
+      button {
+        width: 100%;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+        box-sizing: border-box;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid #ccc;
+      }
+
+      li span {
+        flex: 1;
+        text-align: left;
+        padding-right: 0.5rem;
+      }
+
+      li button {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 1.2rem;
+        line-height: 1;
+        padding: 0;
+        margin: 0;
+      }
+
+      .urgent {
+        background-color: #ffcccc;
+      }
+      .medium {
+        background-color: #fff6cc;
+      }
+      .low {
+        background-color: #ccffcc;
+      }
+      nav {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+      }
+      nav button {
+        flex: 1;
+        padding: 0.5rem;
+        border: none;
+        cursor: pointer;
+      }
+      nav button.active {
+        outline: 2px solid #000;
+      }
+      nav button.urgent {
+        background-color: #ffcccc;
+      }
+      nav button.medium {
+        background-color: #fff6cc;
+      }
+      nav button.low {
+        background-color: #ccffcc;
+      }
+      nav button.all {
+        background-color: #eee;
+      }
+      #listSection {
+        display: none;
+      }
+      h1 {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Boodschappenlijstje</h1>
+
+    <!-- Login -->
+    <div id="loginSection">
+      <input id="email" type="email" placeholder="E-mail" />
+      <input id="password" type="password" placeholder="Wachtwoord" />
+      <button onclick="login()">Inloggen</button>
+    </div>
+
+    <!-- Lijst -->
+    <div id="listSection">
+      <input id="itemInput" placeholder="Nieuw item..." />
+      <select id="urgency">
+        <option value="low">Boeit niet zoveel wanneer</option>
+        <option value="medium">Medium</option>
+        <option value="urgent">Dringend</option>
+      </select>
+      <button onclick="addItem()">Toevoegen</button>
+
+      <nav>
+        <button class="all active" onclick="setFilter('all')">Alles</button>
+        <button class="urgent" onclick="setFilter('urgent')">Dringend</button>
+        <button class="medium" onclick="setFilter('medium')">Medium</button>
+        <button class="low" onclick="setFilter('low')">
+          Boeit niet zoveel
+        </button>
+      </nav>
+
+      <ul id="list"></ul>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        onSnapshot,
+        deleteDoc,
+        doc,
+      } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore.js";
+      import {
+        getAuth,
+        signInWithEmailAndPassword,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-auth.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyAN9jLKuL3nE6dDNqd8eL7sUtj7Naj15tw",
+        authDomain: "boodschappen-a4261.firebaseapp.com",
+        projectId: "boodschappen-a4261",
+        storageBucket: "boodschappen-a4261.firebasestorage.app",
+        messagingSenderId: "901343294171",
+        appId: "1:901343294171:web:afb7d2c93be3fe4d2e92fe",
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+
+      let unsubscribe = null;
+      let currentFilter = "all";
+      let items = [];
+
+      async function login() {
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
+        } catch (err) {
+          alert("Login mislukt: " + err.message);
+        }
+      }
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          document.getElementById("loginSection").style.display = "none";
+          document.getElementById("listSection").style.display = "block";
+          startListener();
+        } else {
+          document.getElementById("loginSection").style.display = "block";
+          document.getElementById("listSection").style.display = "none";
+          if (unsubscribe) unsubscribe();
+        }
+      });
+
+      function startListener() {
+        if (unsubscribe) unsubscribe();
+        unsubscribe = onSnapshot(collection(db, "groceries"), (snapshot) => {
+          items = snapshot.docs.map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data(),
+          }));
+          renderList();
+        });
+      }
+
+      function renderList() {
+        const list = document.getElementById("list");
+        list.innerHTML = "";
+        items.forEach((item) => {
+          if (currentFilter !== "all" && item.urgency !== currentFilter) return;
+          const li = document.createElement("li");
+          if (item.urgency === "urgent") li.classList.add("urgent");
+          if (item.urgency === "medium") li.classList.add("medium");
+          if (item.urgency === "low") li.classList.add("low");
+          const span = document.createElement("span");
+          span.textContent = item.name;
+          const btn = document.createElement("button");
+          btn.textContent = "✅";
+          btn.onclick = () => deleteDoc(doc(db, "groceries", item.id));
+          li.appendChild(span);
+          li.appendChild(btn);
+          list.appendChild(li);
+        });
+      }
+
+      function setFilter(value) {
+        currentFilter = value;
+        document
+          .querySelectorAll("nav button")
+          .forEach((b) => b.classList.remove("active"));
+        document.querySelector(`nav button.${value}`).classList.add("active");
+        renderList();
+      }
+
+      async function addItem() {
+        const input = document.getElementById("itemInput");
+        const urgency = document.getElementById("urgency").value;
+        if (!input.value.trim()) return;
+        await addDoc(collection(db, "groceries"), {
+          name: input.value.trim(),
+          urgency: urgency,
+        });
+        input.value = "";
+      }
+
+      window.login = login;
+      window.addItem = addItem;
+      window.setFilter = setFilter;
+    </script>
+  </body>
+</html>
