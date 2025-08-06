@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Boodschappenlijst</title>
-    <link rel="icon" href="/Shopping_cart.png" type="icon">
+    <link rel="icon" href="/Shopping_cart.png" type="icon" />
     <style>
       body {
         font-family: sans-serif;
@@ -106,15 +106,13 @@
     </div>
 
     <!-- Lijst -->
-     <nav>
-        <button class="all active" onclick="setFilter('all')">Alles</button>
-        <button class="urgent" onclick="setFilter('urgent')">Dringend</button>
-        <button class="medium" onclick="setFilter('medium')">Medium</button>
-        <button class="low" onclick="setFilter('low')">
-          Boeit niet zoveel
-        </button>
-      </nav>
-      
+    <nav>
+      <button class="all active" onclick="setFilter('all')">Alles</button>
+      <button class="urgent" onclick="setFilter('urgent')">Dringend</button>
+      <button class="medium" onclick="setFilter('medium')">Medium</button>
+      <button class="low" onclick="setFilter('low')">Boeit niet zoveel</button>
+    </nav>
+
     <div id="listSection">
       <input id="itemInput" placeholder="Nieuw item..." />
       <select id="urgency">
@@ -196,21 +194,28 @@
       function renderList() {
         const list = document.getElementById("list");
         list.innerHTML = "";
-        items.forEach((item) => {
-          if (currentFilter !== "all" && item.urgency !== currentFilter) return;
-          const li = document.createElement("li");
-          if (item.urgency === "urgent") li.classList.add("urgent");
-          if (item.urgency === "medium") li.classList.add("medium");
-          if (item.urgency === "low") li.classList.add("low");
-          const span = document.createElement("span");
-          span.textContent = item.name;
-          const btn = document.createElement("button");
-          btn.textContent = "✅";
-          btn.onclick = () => deleteDoc(doc(db, "groceries", item.id));
-          li.appendChild(span);
-          li.appendChild(btn);
-          list.appendChild(li);
-        });
+
+        const order = ["urgent", "medium", "low"];
+
+        items
+          .slice()
+          .sort((a, b) => order.indexOf(a.urgency) - order.indexOf(b.urgency))
+          .forEach((item) => {
+            if (currentFilter !== "all" && item.urgency !== currentFilter)
+              return;
+            const li = document.createElement("li");
+            if (item.urgency === "urgent") li.classList.add("urgent");
+            if (item.urgency === "medium") li.classList.add("medium");
+            if (item.urgency === "low") li.classList.add("low");
+            const span = document.createElement("span");
+            span.textContent = item.name;
+            const btn = document.createElement("button");
+            btn.textContent = "✅";
+            btn.onclick = () => deleteDoc(doc(db, "groceries", item.id));
+            li.appendChild(span);
+            li.appendChild(btn);
+            list.appendChild(li);
+          });
       }
 
       function setFilter(value) {
